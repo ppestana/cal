@@ -17,3 +17,6 @@ files/
 __pycache__/
 *.pyc
 *.pyo
+env
+!cal/reports/
+!cal/reports/*.py
