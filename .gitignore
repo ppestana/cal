@@ -1,0 +1,19 @@
+# Dados PostgreSQL
+pgdata/
+pgadmin_data/
+
+# Variáveis de ambiente
+.env
+
+# Ficheiros Mac
+.DS_Store
+__MACOSX/
+
+# Reports gerados
+reports/
+files/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

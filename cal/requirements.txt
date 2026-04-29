@@ -1,0 +1,29 @@
+# CAL — Criticar a Arbitragem Legalmente
+# Requirements — Fase 1 (ingestão + DB)
+
+# Database
+psycopg2-binary==2.9.9
+
+# Data ingestion & manipulation
+pandas==2.2.2
+requests==2.32.3
+numpy==1.26.4
+
+# Environment
+python-dotenv==1.0.1
+
+# Logging / utilities
+rich==13.7.1        # pretty terminal output
+
+# --- Fase 2+ (modelos) — descomenthar quando necessário ---
+# scikit-learn==1.4.2
+# statsmodels==0.14.2
+# scipy==1.13.0
+
+# --- API (Fase 5) ---
+# fastapi==0.111.0
+# uvicorn[standard]==0.30.0
+
+# --- Dashboard (Fase 5) ---
+# streamlit==1.35.0
+# plotly==5.22.0

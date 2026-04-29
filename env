@@ -1,0 +1,11 @@
+# ──CAL — variáveis de ambiente ───────────────────────────────────────
+
+# CAL — variáveis de ambiente
+
+# Base de dados PostgreSQL
+DB_PASSWORD=bigkub-1gezTe-waphuz
+
+# pgAdmin — acesso em http://localhost:5050
+PGADMIN_EMAIL=admin@cal.dev
+PGADMIN_PASSWORD=admin
+

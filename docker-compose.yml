@@ -1,0 +1,98 @@
+# CAL — Criticar a Arbitragem Legalmente
+# Docker Compose — ambiente de desenvolvimento portátil
+#
+# Uso:
+#   ./start.sh          (Linux/Mac)
+#   start.bat           (Windows)
+#   docker compose exec dev bash   ← shell de desenvolvimento
+
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: cal_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-cal}
+      POSTGRES_USER:     ${DB_USER:-cal_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      # Dados persistem no disco externo (pasta pgdata/)
+      - ./pgdata:/var/lib/postgresql/data
+      # Schema inicializado automaticamente quando pgdata/ está vazio
+      - ./cal/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./cal:/app/cal
+      - ./run_ingest.py:/app/run_ingest.py
+      - ./run_referees.py:/app/run_referees.py
+      - ./notebooks:/app/notebooks
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cal_user} -d ${DB_NAME:-cal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cal_net
+
+  # ─── Ambiente de desenvolvimento Python ───────────────────
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cal_dev:latest
+    container_name: cal_dev
+    restart: unless-stopped
+    environment:
+      DB_HOST:     db
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-cal}
+      DB_USER:     ${DB_USER:-cal_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PYTHONPATH:  /app
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      # Código do projecto montado em live — edições locais reflectem imediatamente
+      - .:/app
+      # Notebooks Jupyter separados do código fonte
+      - ./notebooks:/app/notebooks
+      # Pasta Downloads do Mac montada para geração directa de PDFs
+      - ~/Downloads:/downloads
+    ports:
+      - "8000:8000"    # FastAPI (Fase 5)
+      - "8501:8501"    # Streamlit (Fase 5)
+      - "8888:8888"    # Jupyter Lab (exploração)
+    depends_on:
+      db:
+        condition: service_healthy
+    working_dir: /app
+    command: ["tail", "-f", "/dev/null"]    # container fica vivo; entrar via exec
+    networks:
+      - cal_net
+
+  # ─── pgAdmin (opcional — comentar se não for necessário) ──
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cal_pgadmin
+    restart: unless-stopped
+    profiles: ["admin"]    # só inicia com: docker compose --profile admin up
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@cal.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cal_net
+
+networks:
+  cal_net:
+    name: cal_network
+    driver: bridge
