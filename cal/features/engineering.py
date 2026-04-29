@@ -35,6 +35,7 @@ Uso:
 """
 
 import logging
+import math
 from datetime import date
 from typing import Optional
 
@@ -406,6 +407,16 @@ def save_to_db(features: pd.DataFrame) -> None:
         cur.execute(CREATE_TABLE)
         conn.commit()
 
+        int_cols = ['match_id', 'team_id', 'opp_id', 'referee_id',
+                    'matchday', 'is_home', 'yellow_cards', 'red_cards', 'fouls',
+                    'ref_games_total']
+        for col in int_cols:
+            if col in features.columns:
+                features[col] = features[col].apply(
+                    lambda x: None if (
+                        x is None or (isinstance(x, float) and math.isnan(x))
+                    ) else int(x)
+                )
         records = features.where(pd.notnull(features), None).to_dict('records')
         cur.executemany(UPSERT, records)
         conn.commit()
