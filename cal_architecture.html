@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAL — Arquitectura do Sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0f10;
+  --bg2:       #141618;
+  --bg3:       #1c1f22;
+  --bg4:       #242830;
+  --border:    #2a2e34;
+  --border2:   #373d46;
+  --text:      #d4d8de;
+  --text2:     #8a929e;
+  --text3:     #4e5663;
+  --amber:     #f5a623;
+  --amber2:    #c47d0e;
+  --amber-dim: rgba(245,166,35,0.08);
+  --red:       #e04040;
+  --red-dim:   rgba(224,64,64,0.08);
+  --green:     #3db87a;
+  --green-dim: rgba(61,184,122,0.08);
+  --blue:      #4a9eff;
+  --blue-dim:  rgba(74,158,255,0.08);
+  --teal:      #2ec4b6;
+  --font-head: 'Oswald', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --sidebar-w: 240px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  display: flex;
+}
+
+/* ─── Sidebar ─── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  position: fixed;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 40px;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-brand .sigla {
+  font-family: var(--font-head);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--amber);
+  line-height: 1;
+  display: block;
+}
+
+.sidebar-brand .full-name {
+  font-size: 10px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-top: 6px;
+  display: block;
+}
+
+.sidebar-version {
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+.badge-amber { color: var(--amber); border-color: var(--amber2); background: var(--amber-dim); }
+.badge-red   { color: var(--red);   border-color: var(--red);    background: var(--red-dim); }
+.badge-green { color: var(--green); border-color: var(--green);  background: var(--green-dim); }
+.badge-blue  { color: var(--blue);  border-color: var(--blue);   background: var(--blue-dim); }
+.badge-teal  { color: var(--teal);  border-color: var(--teal);   background: rgba(46,196,182,0.08); }
+.badge-gray  { color: var(--text2); border-color: var(--border2); background: var(--bg3); }
+
+.sidebar-nav { padding: 16px 0; flex: 1; }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 14px 24px 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 24px;
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+  transition: color 0.15s, background 0.15s;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active { color: var(--amber); border-left-color: var(--amber); background: var(--amber-dim); }
+
+.nav-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-done  { background: var(--green); }
+.dot-wip   { background: var(--amber); }
+.dot-plan  { background: var(--border2); }
+
+.sidebar-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-footer p { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.sidebar-footer a { color: var(--text3); text-decoration: underline; }
+
+/* ─── Main content ─── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  max-width: calc(100% - var(--sidebar-w));
+  min-height: 100vh;
+}
+
+/* ─── Hero ─── */
+.hero {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 56px 64px 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: 'CAL';
+  position: absolute;
+  right: -10px;
+  top: -24px;
+  font-family: var(--font-head);
+  font-size: 260px;
+  font-weight: 600;
+  letter-spacing: 10px;
+  color: rgba(245,166,35,0.03);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hero-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  font-family: var(--font-head);
+  font-size: 48px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #ffffff;
+  line-height: 1.1;
+  max-width: 700px;
+  margin-bottom: 16px;
+}
+
+.hero h1 span { color: var(--amber); }
+
+.hero-sub {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text2);
+  max-width: 600px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ─── Content sections ─── */
+.section {
+  padding: 56px 64px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section:last-child { border-bottom: none; }
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+}
+
+.section-title {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+
+.section-lead {
+  font-size: 15px;
+  color: var(--text2);
+  font-weight: 300;
+  max-width: 720px;
+  margin-bottom: 32px;
+  line-height: 1.8;
+}
+
+/* ─── Phase cards ─── */
+.phases-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.phase-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.phase-card:hover { border-color: var(--border2); }
+
+.phase-card.done  { border-top: 2px solid var(--green); }
+.phase-card.wip   { border-top: 2px solid var(--amber); }
+.phase-card.plan  { border-top: 2px solid var(--border2); }
+
+.phase-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.phase-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.phase-desc {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.phase-status {
+  margin-top: 14px;
+}
+
+/* ─── Architecture flow ─── */
+.arch-flow {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px;
+  margin-bottom: 32px;
+}
+
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.flow-row:last-child { margin-bottom: 0; }
+
+.flow-node {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.flow-node.active { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+.flow-node.pending { color: var(--text3); border-color: var(--border); }
+
+.flow-arrow {
+  color: var(--text3);
+  font-size: 12px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* ─── DB Schema ─── */
+.schema-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.table-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg4);
+}
+
+.table-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--amber);
+}
+
+.table-badge { font-size: 10px; }
+
+.table-body { padding: 12px 0; }
+
+.table-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.table-row:hover { background: var(--bg4); }
+
+.col-name { color: var(--text); flex: 1; }
+.col-pk   { color: var(--amber); }
+.col-fk   { color: var(--blue); }
+.col-type { color: var(--text3); font-size: 10.5px; }
+.col-icon { font-size: 9px; opacity: 0.6; }
+
+.table-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+/* ─── Data sources table ─── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  font-weight: 400;
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg3); }
+
+.data-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--amber);
+  white-space: nowrap;
+}
+
+/* ─── Code block ─── */
+pre {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+pre .kw  { color: var(--amber); }
+pre .cm  { color: var(--text3); font-style: italic; }
+pre .st  { color: var(--green); }
+pre .tp  { color: var(--teal); }
+pre .ref { color: var(--blue); }
+
+/* ─── Stat model cards ─── */
+.model-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.model-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 24px;
+}
+
+.model-card h3 {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.model-card p {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+.formula {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.formula .var { color: var(--amber); }
+.formula .tilde { color: var(--text3); }
+.formula .feat { color: var(--blue); }
+
+/* ─── Z-score table ─── */
+.zscore-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  background: var(--bg3);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.zscore-table th {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-align: left;
+  text-transform: uppercase;
+  background: var(--bg4);
+  font-weight: 400;
+}
+
+.zscore-table td {
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.zscore-table td:first-child { font-family: var(--font-mono); color: var(--amber); }
+
+.z-normal  { color: var(--green);  }
+.z-suspect { color: var(--amber);  }
+.z-strong  { color: var(--red);    }
+
+/* ─── Stack list ─── */
+.stack-group { margin-bottom: 28px; }
+
+.stack-group-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stack-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stack-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-item .tech-name { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+.stack-item .tech-role { font-size: 11px; color: var(--text3); }
+
+/* ─── Changelog ─── */
+.changelog-entry {
+  display: flex;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.changelog-entry:last-child { border-bottom: none; }
+
+.changelog-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+  padding-top: 2px;
+  min-width: 100px;
+}
+
+.changelog-content h4 {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.changelog-content p {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+/* ─── Info boxes ─── */
+.info-box {
+  border-radius: 4px;
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 20px;
+  border-left: 3px solid;
+}
+
+.info-box.warn  { background: var(--amber-dim); border-color: var(--amber); color: var(--text); }
+.info-box.info  { background: var(--blue-dim);  border-color: var(--blue);  color: var(--text); }
+.info-box.ok    { background: var(--green-dim); border-color: var(--green); color: var(--text); }
+
+.info-box strong { font-weight: 500; }
+
+/* ─── Roadmap timeline ─── */
+.timeline { position: relative; padding-left: 32px; }
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px; top: 8px; bottom: 8px;
+  width: 1px;
+  background: var(--border);
+}
+
+.tl-item {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -28px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.tl-item.done::before  { border-color: var(--green); background: var(--green); }
+.tl-item.wip::before   { border-color: var(--amber); background: var(--amber); }
+.tl-item.plan::before  { border-color: var(--border2); background: var(--bg); }
+
+.tl-phase {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tl-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.tl-desc {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.7;
+  max-width: 680px;
+}
+
+.tl-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ─── Divider ─── */
+.divider { height: 1px; background: var(--border); margin: 28px 0; }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 0px; }
+  #sidebar { display: none; }
+  #main { margin-left: 0; max-width: 100%; }
+  .hero { padding: 36px 28px; }
+  .section { padding: 40px 28px; }
+  .phases-grid { grid-template-columns: 1fr 1fr; }
+  .model-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .phases-grid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 34px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────
+     SIDEBAR
+────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <span class="sigla">CAL</span>
+    <span class="full-name">Criticar a Arbitragem Legalmente</span>
+  </div>
+
+  <div class="sidebar-version">
+    <span class="badge badge-amber">v0.9.1</span>
+    <span class="badge badge-green">Fases 1–4 completas</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Documentação</div>
+    <a class="nav-item active" href="#visao-geral"><span class="nav-dot dot-done"></span>Visão Geral</a>
+    <a class="nav-item" href="#arquitectura"><span class="nav-dot dot-done"></span>Arquitectura</a>
+    <a class="nav-item" href="#schema"><span class="nav-dot dot-done"></span>Schema da Base de Dados</a>
+    <a class="nav-item" href="#pipeline"><span class="nav-dot dot-done"></span>Pipeline de Dados</a>
+    <a class="nav-item" href="#fontes"><span class="nav-dot dot-done"></span>Fontes de Dados</a>
+
+    <div class="nav-group-label">Modelação</div>
+    <a class="nav-item" href="#modelos"><span class="nav-dot dot-done"></span>Modelos Estatísticos</a>
+    <a class="nav-item" href="#bias-engine"><span class="nav-dot dot-done"></span>Bias Engine</a>
+    <a class="nav-item" href="#analise-cartoes"><span class="nav-dot dot-done"></span>Análise de Cartões</a>
+
+    <div class="nav-group-label">Outputs</div>
+    <a class="nav-item" href="#api"><span class="nav-dot dot-plan"></span>REST API</a>
+    <a class="nav-item" href="#dashboard"><span class="nav-dot dot-done"></span>Dashboard</a>
+
+    <div class="nav-group-label">Projecto</div>
+    <a class="nav-item" href="#stack"><span class="nav-dot dot-done"></span>Stack Tecnológico</a>
+    <a class="nav-item" href="#manutencao"><span class="nav-dot dot-done"></span>Manutenção de Épocas</a>
+    <a class="nav-item" href="#roadmap"><span class="nav-dot dot-wip"></span>Roadmap</a>
+    <a class="nav-item" href="#declaracao-ia"><span class="nav-dot dot-done"></span>Declaração IA</a>
+    <a class="nav-item" href="#changelog"><span class="nav-dot dot-done"></span>Changelog</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <p>Dados: <a href="https://www.football-data.co.uk" target="_blank">football-data.co.uk</a>
+    + <a href="https://www.sofascore.com" target="_blank">Sofascore</a><br>
+    Liga: Primeira Liga Portuguesa<br>
+    Cobertura: 2017/18 → presente</p>
+  </div>
+</aside>
+
+<!-- ──────────────────────────────────────────────
+     MAIN
+────────────────────────────────────────────── -->
+<main id="main">
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="hero-kicker">Documentação técnica do sistema · v0.9.1</div>
+    <h1>Criticar a Arbitragem <span>Legalmente</span></h1>
+    <p class="hero-sub">
+      Plataforma de análise estatística para detecção de padrões anómalos
+      nas decisões de arbitragem da Primeira Liga Portuguesa. Bias scores
+      calculados a partir de modelos de probabilidade esperada versus
+      decisões observadas.
+    </p>
+    <div class="hero-meta">
+      <span class="badge badge-amber">PostgreSQL</span>
+      <span class="badge badge-blue">Python 3.11</span>
+      <span class="badge badge-teal">FastAPI</span>
+      <span class="badge badge-gray">Streamlit</span>
+      <span class="badge badge-gray">scikit-learn</span>
+      <span class="badge badge-gray">statsmodels</span>
+    </div>
+  </section>
+
+  <!-- ── 1 · VISÃO GERAL ── -->
+  <section class="section" id="visao-geral">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">01 — Visão Geral</h2>
+    </div>
+
+    <p class="section-lead">
+      O CAL é um sistema de data analytics que quantifica desvios entre
+      <em>decisões de arbitragem esperadas</em> e <em>decisões observadas</em>.
+      Para cada árbitro, temporada e tipo de decisão, o sistema calcula
+      Z-scores de viés e um score composto de suspeição que permite
+      comparação e ranking entre árbitros.
+    </p>
+
+    <div class="info-box ok">
+      <strong>Âmbito actual:</strong> Primeira Liga Portuguesa (Liga Portugal Betclic),
+      temporadas 2017/18 a 2025/26. Dados agregados por jogo via football-data.co.uk
+      (golos, cartões, faltas) e Sofascore API (árbitros). Totalmente gratuito.
+    </div>
+
+    <div class="info-box info">
+      <strong>Expansão possível:</strong> O modelo xP (expected penalty) completo
+      requer <code>contact_type</code>, <code>location_x/y</code> e <code>defender_position</code>
+      disponíveis via Sportmonks (~€50/mês). Fora do âmbito actual — os modelos
+      de viés para cartões e faltas são totalmente viáveis com dados gratuitos.
+    </div>
+
+    <div class="phases-grid">
+      <div class="phase-card done">
+        <div class="phase-num">Fase 1</div>
+        <div class="phase-title">Dados & Schema</div>
+        <div class="phase-desc">Schema PostgreSQL, pipeline de ingestão football-data.co.uk + Sofascore, normalização de árbitros e equipas. 9 épocas, 2673 jogos.</div>
+        <div class="phase-status"><span class="badge badge-green">✓ Completo</span></div>
+      </div>
+      <div class="phase-card done">
+        <div class="phase-num">Fase 2</div>
+        <div class="phase-title">Feature Engineering</div>
+        <div class="phase-desc">Feature matrix com 21 colunas: rolling team strength, rolling referee stats, matchday, score_diff HT. 4896 linhas (2448 jogos × 2 equipas).</div>
+        <div class="phase-status"><span class="badge badge-green">✓ Completo</span></div>
+      </div>
+      <div class="phase-card done">
+        <div class="phase-num">Fase 3</div>
+        <div class="phase-title">Modelos Estatísticos</div>
+        <div class="phase-desc">xYC (Brier ~0.07), xRC (Brier ~0.11), xF Poisson (MAE ~3.3 faltas). LOSO cross-validation. 4816 predições em expected_probabilities.</div>
+        <div class="phase-status"><span class="badge badge-green">✓ Completo</span></div>
+      </div>
+      <div class="phase-card done">
+        <div class="phase-num">Fase 4</div>
+        <div class="phase-title">Bias Engine</div>
+        <div class="phase-desc">Z-scores por árbitro+época, interacção árbitro×equipa, consistência temporal, peer comparison, cartões por equipa. 6 tabelas de output.</div>
+        <div class="phase-status"><span class="badge badge-green">✓ Completo</span></div>
+      </div>
+      <div class="phase-card done">
+        <div class="phase-num">Fase 5</div>
+        <div class="phase-title">Dashboard Streamlit</div>
+        <div class="phase-desc">6 vistas: árbitro específico, desvios extremos, heatmap, por equipa, perfil de equipa, ajuda/FAQ. Botão de actualização incremental. Faltas e amarelos em todas as vistas.</div>
+        <div class="phase-status"><span class="badge badge-green">✓ Completo</span></div>
+      </div>
+      <div class="phase-card plan">
+        <div class="phase-num">Fase 6</div>
+        <div class="phase-title">Automação</div>
+        <div class="phase-desc">Pipeline pós-jornada automático, scheduler, alertas para Z-scores acima de limiar.</div>
+        <div class="phase-status"><span class="badge badge-gray">Pendente</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 2 · ARQUITECTURA ── -->
+  <section class="section" id="arquitectura">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">02 — Arquitectura do Sistema</h2>
+    </div>
+
+    <p class="section-lead">
+      Arquitectura modular em seis camadas independentes, todas a correr dentro
+      de containers Docker. O único pré-requisito no computador host é ter o
+      Docker Desktop instalado — Python, PostgreSQL e todas as dependências
+      estão encapsuladas nos containers.
+    </p>
+
+    <!-- Diagrama Docker -->
+    <h3 style="font-family:var(--font-head); font-size:18px; font-weight:500; color:#fff; margin:0 0 12px;">Ambiente Docker — portátil em disco externo</h3>
+
+    <div class="arch-flow" style="margin-bottom:28px;">
+      <div style="border:2px dashed var(--amber2); border-radius:8px; padding:20px; background:rgba(245,166,35,0.03);">
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--amber); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:14px;">
+          docker compose — 3 containers na mesma rede (cal_network)
+        </div>
+        <div style="display:flex; gap:12px; align-items:stretch; flex-wrap:wrap;">
+
+          <div style="flex:1; min-width:200px; background:var(--bg4); border:1px solid var(--teal); border-radius:6px; padding:14px;">
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--teal); letter-spacing:0.1em; margin-bottom:8px;">📦 cal_dev · Python 3.11</div>
+            <div style="font-size:11px; color:var(--text2); line-height:1.9;">
+              scikit-learn · statsmodels<br>
+              pandas · numpy · scipy<br>
+              streamlit · plotly<br>
+              <span style="color:var(--amber)">→ :8501 dashboard</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; color:var(--text3); font-size:20px; padding:0 4px;">⇄</div>
+
+          <div style="flex:1; min-width:180px; background:var(--bg4); border:1px solid var(--blue); border-radius:6px; padding:14px;">
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--blue); letter-spacing:0.1em; margin-bottom:8px;">🗄️ cal_db · PostgreSQL 15</div>
+            <div style="font-size:11px; color:var(--text2); line-height:1.9;">
+              18 tabelas analíticas<br>
+              2673 jogos · 9 épocas<br>
+              <span style="color:var(--amber)">→ :5432</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; color:var(--text3); font-size:20px; padding:0 4px;">⇄</div>
+
+          <div style="flex:0 0 auto; min-width:130px; background:var(--bg4); border:1px dashed var(--border); border-radius:6px; padding:14px; opacity:0.65;">
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--text3); letter-spacing:0.1em; margin-bottom:8px;">🖥️ cal_pgadmin</div>
+            <div style="font-size:11px; color:var(--text3); line-height:1.9;">
+              pgAdmin 4<br>
+              opcional<br>
+              <span style="font-size:10px;">--profile admin</span><br>
+              → :5050
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; color:var(--text3); line-height:1.8;">
+          <span style="color:var(--amber2)">📂 Volumes montados do disco externo:</span><br>
+          <code style="font-family:var(--font-mono); font-size:10.5px;">./cal → /app/cal</code>&nbsp;&nbsp;
+          <code style="font-family:var(--font-mono); font-size:10.5px;">./pgdata → /var/lib/postgresql/data</code>&nbsp;&nbsp;
+          <code style="font-family:var(--font-mono); font-size:10.5px;">./.streamlit → /app/.streamlit</code>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; font-size:12px; color:var(--text2); line-height:1.7;">
+        <strong style="color:var(--text)">Portabilidade:</strong>
+        ao ligar o disco externo a qualquer computador com Docker Desktop instalado,
+        o ambiente arranca com <code style="font-family:var(--font-mono)">./start.sh</code> (Linux/Mac)
+        ou <code style="font-family:var(--font-mono)">start.bat</code> (Windows).
+        Na primeira execução num computador novo, a imagem é construída localmente (~3–5 min).
+        Os dados PostgreSQL estão em <code style="font-family:var(--font-mono)">pgdata/</code>
+        e viajam com o disco.
+      </div>
+    </div>
+
+    <!-- Pipeline flow -->
+    <h3 style="font-family:var(--font-head); font-size:18px; font-weight:500; color:#fff; margin:28px 0 12px;">Fluxo da pipeline de dados</h3>
+
+    <div class="arch-flow">
+      <div class="flow-row">
+        <div class="flow-node active">football-data.co.uk</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">ingest/footballdata.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">PostgreSQL: cal</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node active">Sofascore API</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">ingest/sofascore.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">matches.referee_id</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node active">PostgreSQL: cal</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">features/engineering.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">match_features</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">models/train.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">expected_probabilities</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node active">expected_probabilities</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">bias_engine.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">referee_bias_scores</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">analysis/cards_by_team.py</div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node active">referee_bias_scores</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">dashboard/app.py</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">:8501 (Streamlit)</div>
+      </div>
+    </div>
+
+      <!-- ── Tabelas Fase 6 ── -->
+  <div class="info-box info" style="margin-bottom:16px">
+    <strong>Tabelas adicionadas na Fase 6:</strong>
+    <ul style="margin:8px 0 0 16px; font-size:13px; color:var(--text2)">
+      <li><code>referee_bias_history</code> — Z-scores acumulados por árbitro+época+jornada. Permite ver a evolução do padrão de viés ao longo da época.</li>
+      <li><code>referee_alerts</code> — Alertas gerados automaticamente após cada jornada. Inclui <code>sig_yellow_fdr</code> / <code>sig_fouls_fdr</code> (Benjamini-Hochberg FDR 5%), classificados em 3 níveis: monitorizar, suspeito, anomalia.</li>
+    </ul>
+  </div>
+
+  <div class="info-box info">
+      <strong>Convenção de ficheiros:</strong> Cada módulo da pipeline corre de forma
+      independente e pode ser chamado via CLI ou pelo botão <em>▶ Actualizar agora</em>
+      no dashboard. O estado partilhado é a base de dados PostgreSQL — não existem
+      dependências em memória entre módulos.
+    </div>
+
+    <pre><span class="cm"># Estrutura de ficheiros no disco externo</span>
+CAL/
+├── cal/
+│   ├── <span class="kw">schema.sql</span>  · <span class="kw">db.py</span>
+│   ├── ingest/  <span class="cm">→ footballdata.py · sofascore.py</span>
+│   ├── features/ <span class="cm">→ engineering.py</span>
+│   ├── models/   <span class="cm">→ train.py · saved/models.joblib</span>
+│   ├── analysis/ <span class="cm">→ cards_by_team.py</span>
+│   ├── <span class="kw">bias_engine.py</span>
+│   └── dashboard/ <span class="cm">→ app.py</span>
+├── pgdata/              <span class="cm"># base de dados PostgreSQL (não editar)</span>
+├── .streamlit/          <span class="cm"># configuração do tema</span>
+├── <span class="kw">docker-compose.yml</span>   <span class="cm"># define os 3 containers</span>
+├── <span class="kw">Dockerfile</span>           <span class="cm"># imagem cal_dev</span>
+├── <span class="kw">start.sh</span> / <span class="kw">start.bat</span> <span class="cm"># arranque do ambiente</span>
+├── <span class="kw">stop.sh</span>  / <span class="kw">stop.bat</span>  <span class="cm"># paragem do ambiente</span>
+├── <span class="kw">run_ingest.py</span>        <span class="cm"># ✓ CLI — ingestão football-data</span>
+├── <span class="kw">run_referees.py</span>      <span class="cm"># ✓ CLI — árbitros Sofascore</span>
+├── <span class="kw">run_features.py</span>      <span class="cm"># ✓ CLI — feature engineering</span>
+├── <span class="kw">run_models.py</span>        <span class="cm"># ✓ CLI — treino dos modelos</span>
+├── <span class="kw">run_bias.py</span>          <span class="cm"># ✓ CLI — bias engine</span>
+└── <span class="kw">run_cards.py</span>         <span class="cm"># ✓ CLI — análise de cartões</span></pre>
+  </section>
+
+  <!-- ── 3 · SCHEMA ── -->
+  <section class="section" id="schema">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">03 — Schema da Base de Dados</h2>
+    </div>
+
+    <p class="section-lead">
+      PostgreSQL 15+. Dezoito tabelas analíticas (originais + geradas pelas Fases 2–4).
+      As tabelas de alias (<code>team_aliases</code>, <code>referee_aliases</code>)
+      resolvem o problema de normalização de nomes entre fontes de dados distintas.
+    </p>
+
+    <div class="schema-grid">
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referees</span>
+          <span class="badge badge-amber table-badge">lookup</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">referee_id</span><span class="col-type">SERIAL PK</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">name</span><span class="col-type">VARCHAR(100) UNIQUE</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">nationality</span><span class="col-type">VARCHAR(50)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">active</span><span class="col-type">BOOLEAN</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_aliases</span>
+          <span class="badge badge-blue table-badge">normalização</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">alias_id</span><span class="col-type">SERIAL PK</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id</span><span class="col-type">FK → referees</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">source</span><span class="col-type">VARCHAR(30)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">alias_name</span><span class="col-type">VARCHAR(100)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">teams</span>
+          <span class="badge badge-amber table-badge">lookup</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">team_id</span><span class="col-type">SERIAL PK</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">name</span><span class="col-type">VARCHAR(100) UNIQUE</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">short_name</span><span class="col-type">VARCHAR(30)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">seasons</span>
+          <span class="badge badge-amber table-badge">lookup</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">season_id</span><span class="col-type">SERIAL PK</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">label</span><span class="col-type">'2023/24' UNIQUE</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">start_year</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">end_year</span><span class="col-type">SMALLINT</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">matches</span>
+          <span class="badge badge-teal table-badge">core</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">match_id</span><span class="col-type">SERIAL PK</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">season_id</span><span class="col-type">FK → seasons</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">home_team_id</span><span class="col-type">FK → teams</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">away_team_id</span><span class="col-type">FK → teams</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id</span><span class="col-type">FK → referees</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">match_date</span><span class="col-type">DATE</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">home_goals / away_goals</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">source_row_hash</span><span class="col-type">SHA-256 dedup</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">match_stats</span>
+          <span class="badge badge-teal table-badge">core</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">match_id</span><span class="col-type">FK → matches</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">team_id</span><span class="col-type">FK → teams</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">is_home</span><span class="col-type">BOOLEAN</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">fouls</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">yellow_cards</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">red_cards</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">xg</span><span class="col-type">NUMERIC (reservado)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">expected_probabilities</span>
+          <span class="badge badge-gray table-badge">modelos</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">match_id</span><span class="col-type">FK → matches</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">team_id</span><span class="col-type">FK → teams</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">expected_yellows</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">expected_reds</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">expected_penalties</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">model_version</span><span class="col-type">VARCHAR(20)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_bias_scores</span>
+          <span class="badge badge-red table-badge">outputs</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id</span><span class="col-type">FK → referees</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">season_id</span><span class="col-type">FK → seasons</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">yellow_diff_bias_z</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">red_diff_bias_z</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">penalty_home_bias_z</span><span class="col-type">NUMERIC(8,4)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">suspicion_score</span><span class="col-type">NUMERIC(8,4)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_team_bias</span>
+          <span class="badge badge-red table-badge">outputs</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id</span><span class="col-type">FK → referees</span></div>
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">team_id</span><span class="col-type">FK → teams</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">interaction_coef</span><span class="col-type">NUMERIC(10,6)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">p_value</span><span class="col-type">NUMERIC(10,6)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">significant</span><span class="col-type">BOOLEAN (gerado)</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">ingest_log</span>
+          <span class="badge badge-gray table-badge">auditoria</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">source</span><span class="col-type">VARCHAR(30)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">season_label</span><span class="col-type">VARCHAR(10)</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">rows_fetched / inserted</span><span class="col-type">INTEGER</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">status</span><span class="col-type">'success'|'error'</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">started_at / finished_at</span><span class="col-type">TIMESTAMP</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">match_features</span>
+          <span class="badge badge-blue table-badge">Fase 2</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">match_id, team_id</span><span class="col-type">PK composto</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">is_home, matchday</span><span class="col-type">SMALLINT</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">team_points_r10</span><span class="col-type">rolling 10j</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">ref_yellows_pg_r20</span><span class="col-type">rolling 20j árbitro</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">yellow_cards, red_cards, fouls</span><span class="col-type">observados</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_bias_scores</span>
+          <span class="badge badge-red table-badge">Fase 4</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id, season</span><span class="col-type">PK composto</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">yellow_diff_bias_z</span><span class="col-type">binomial Z-test</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">red_diff_bias_z</span><span class="col-type">binomial Z-test</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">fouls_diff_bias_z</span><span class="col-type">t-test médias</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">suspicion_score</span><span class="col-type">score composto</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_temporal_consistency</span>
+          <span class="badge badge-red table-badge">Fase 4</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-pk">●</span><span class="col-name">referee_id</span><span class="col-type">PK</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">n_seasons_biased_y</span><span class="col-type">épocas com |z|>1.5</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">consistency_y</span><span class="col-type">fracção mesma direcção</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">evidence_score</span><span class="col-type">score composto temporal</span></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-name">referee_team_cards_total</span>
+          <span class="badge badge-red table-badge">Fase 4</span>
+        </div>
+        <div class="table-body">
+          <div class="table-row"><span class="col-fk">◆</span><span class="col-name">referee_id, team_id</span><span class="col-type">PK composto</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">media_amarelos</span><span class="col-type">acumulado 7 épocas</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">desvio_vs_media_arbitro</span><span class="col-type">diff face à média</span></div>
+          <div class="table-row"><span class="col-icon">○</span><span class="col-name">ranking_amarelos</span><span class="col-type">1 = mais cartões</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <p style="font-size:13px; color:var(--text2); margin-bottom:16px; font-weight:300;">
+      <strong style="font-weight:500; color:var(--text);">Views analíticas disponíveis:</strong>
+      <code style="font-family:var(--font-mono); font-size:12px; color:var(--amber);">v_matches</code>,
+      <code style="font-family:var(--font-mono); font-size:12px; color:var(--amber);">v_referee_raw_stats</code>,
+      <code style="font-family:var(--font-mono); font-size:12px; color:var(--amber);">v_suspicion_ranking</code>.
+      As views são actualizadas automaticamente com cada ingestão — não requerem recomputação.
+    </p>
+
+    <div class="info-box warn">
+      <strong>Atenção — normalização de árbitros:</strong> Após a primeira ingestão completa,
+      a tabela <code>referees</code> pode conter duplicados por variações de nome entre temporadas
+      (ex: "A.Nobre" vs "António Nobre"). Usar a tabela <code>referee_aliases</code> para consolidar
+      manualmente antes de correr os modelos.
+    </div>
+  </section>
+
+    
+
+  <!-- ── 4 · PIPELINE ── -->
+  <section class="section" id="pipeline">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">04 — Pipeline de Dados</h2>
+    </div>
+
+    <p class="section-lead">
+      A Fase 1 implementa a pipeline completa para football-data.co.uk.
+      Cada step é idempotente — pode ser re-executado sem duplicar dados.
+    </p>
+
+    <pre><span class="cm"># Correr a ingestão</span>
+
+<span class="cm"># Todas as temporadas (2017/18 → 2024/25)</span>
+python run_ingest.py
+
+<span class="cm"># Temporada específica</span>
+python run_ingest.py <span class="st">"2024/25"</span>
+
+<span class="cm"># Verificar resultado</span>
+psql -d cal -c <span class="st">"SELECT * FROM ingest_log ORDER BY started_at DESC LIMIT 5;"</span>
+psql -d cal -c <span class="st">"SELECT season, COUNT(*) jogos FROM v_matches GROUP BY season ORDER BY season;"</span></pre>
+
+    <div class="info-box info">
+      <strong>Deduplicação:</strong> Cada jogo é identificado pelo triple
+      <code>(match_date, home_team_id, away_team_id)</code>. Re-ingestão da mesma temporada
+      faz UPDATE das colunas variáveis (árbitro, golos) sem criar duplicados.
+      O campo <code>source_row_hash</code> guarda o SHA-256 da linha original para auditoria.
+    </div>
+
+    <h3 style="font-family:var(--font-head); font-size:18px; font-weight:500; color:#fff; margin: 28px 0 12px;">Steps da pipeline — football-data.co.uk</h3>
+    <div class="arch-flow">
+      <div class="flow-row">
+        <div class="flow-node active">fetch_season_csv()</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">normalise_df()</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">parse_date()</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">upsert_team()</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">upsert_referee()</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">upsert match + stats</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node active">log_ingest()</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5 · FONTES ── -->
+  <section class="section" id="fontes">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2 class="section-title">05 — Fontes de Dados</h2>
+    </div>
+
+    <p class="section-lead">
+      O sistema utiliza duas fontes gratuitas. As restantes fontes foram avaliadas
+      e descartadas pelos motivos indicados.
+    </p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Fonte</th>
+          <th>Dados disponíveis</th>
+          <th>Granularidade</th>
+          <th>Custo</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>football-data.co.uk</td>
+          <td>Golos (FT+HT), cartões, faltas, remates, cantos por jogo. 2007/08→presente. <strong>Nota:</strong> a coluna Referee não existe para a Primeira Liga.</td>
+          <td>Por jogo (agregado)</td>
+          <td style="color:var(--green)">Gratuito</td>
+          <td><span class="badge badge-green">✓ Em uso</span></td>
+        </tr>
+        <tr>
+          <td>Sofascore API</td>
+          <td>Árbitros por jogo para a Liga Portugal. Cobertura: 2017/18→presente. Acesso via API não-oficial. 98.4% de cobertura nas 7 épocas completas.</td>
+          <td>Por jogo</td>
+          <td style="color:var(--green)">Gratuito</td>
+          <td><span class="badge badge-green">✓ Em uso</span></td>
+        </tr>
+        <tr>
+          <td>FBref (soccerdata)</td>
+          <td>A biblioteca soccerdata só suporta as Big 5 ligas europeias — a Primeira Liga não está incluída. Descartado.</td>
+          <td>—</td>
+          <td style="color:var(--green)">Gratuito</td>
+          <td><span class="badge badge-red">✗ Não disponível para Liga PT</span></td>
+        </tr>
+        <tr>
+          <td>Transfermarkt</td>
+          <td>Avaliado mas não integrado — a força das equipas é aproximada via rolling points (últimos 10 jogos), que se mostrou suficiente para os modelos actuais.</td>
+          <td>—</td>
+          <td style="color:var(--green)">Gratuito</td>
+          <td><span class="badge badge-gray">Não utilizado</span></td>
+        </tr>
+        <tr>
+          <td>Sportmonks API</td>
+          <td>Eventos ao minuto com coordenadas espaciais. Necessário para modelo xP completo com contact_type e location_x/y. Fora do âmbito actual.</td>
+          <td>Evento por evento</td>
+          <td style="color:var(--amber)">~€50/mês</td>
+          <td><span class="badge badge-gray">Opcional — futuro</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 6 · MODELOS ── -->
+  <section class="section" id="modelos">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2 class="section-title">06 — Modelos Estatísticos</h2>
+      <span class="badge badge-green">✓ Fase 3 completa</span>
+    </div>
+
+    <p class="section-lead">
+      Três modelos estimam a probabilidade esperada de cada decisão de arbitragem
+      dado o contexto do jogo. Treinados com leave-one-season-out cross-validation
+      em 4816 observações (jogos × equipas). Modelos serializados em
+      <code>cal/models/saved/models.joblib</code>.
+    </p>
+
+    <div class="model-grid">
+      <div class="model-card">
+        <h3>Regressão Logística — xYC</h3>
+        <p>P(cartão amarelo | contexto). Brier score médio: 0.067. Features reais implementadas.</p>
+        <div class="formula">
+          <span class="var">xYC</span> <span class="tilde">~</span>
+          <span class="feat">is_home</span> +
+          <span class="feat">matchday</span> +
+          <span class="feat">team_points_r10</span> +
+          <span class="feat">opp_points_r10</span> +
+          <span class="feat">ref_yellows_pg_r20</span> +
+          <span class="feat">ref_fouls_pg_r20</span> +
+          <span class="feat">ref_games_total</span>
+        </div>
+      </div>
+      <div class="model-card">
+        <h3>Regressão Logística — xRC</h3>
+        <p>P(cartão vermelho | contexto). Brier score médio: 0.113. Evento raro (~13% dos casos).</p>
+        <div class="formula">
+          <span class="var">xRC</span> <span class="tilde">~</span>
+          <span class="feat">is_home</span> +
+          <span class="feat">matchday</span> +
+          <span class="feat">team_points_r10</span> +
+          <span class="feat">opp_points_r10</span> +
+          <span class="feat">ref_reds_pg_r20</span> +
+          <span class="feat">ref_yellows_pg_r20</span> +
+          <span class="feat">ref_games_total</span>
+        </div>
+      </div>
+      <div class="model-card">
+        <h3>Modelo Poisson — xF (faltas)</h3>
+        <p>E(faltas | contexto). MAE médio: 3.3 faltas/jogo. Captura tendência descendente 2017→2025.</p>
+        <div class="formula">
+          <span class="var">log(xF)</span> <span class="tilde">=</span>
+          <span class="feat">is_home</span> +
+          <span class="feat">matchday</span> +
+          <span class="feat">team_points_r10</span> +
+          <span class="feat">team_goals_scored_r10</span> +
+          <span class="feat">team_goals_conceded_r10</span> +
+          <span class="feat">ref_fouls_pg_r20</span>
+        </div>
+      </div>
+      <div class="model-card">
+        <h3>Validação — LOSO Cross-Validation</h3>
+        <p>Leave-One-Season-Out: treinar em 7 épocas, validar na 8ª. Repete para cada época. Garante que os bias scores são calculados com modelos que nunca viram os jogos avaliados.</p>
+        <div class="formula">
+          <span class="var">para cada época T</span><br>
+          <span class="tilde">treinar em</span> <span class="feat">épocas ≠ T</span><br>
+          <span class="tilde">prever em</span> <span class="feat">época T</span><br>
+          <span class="tilde">guardar em</span> <span class="feat">expected_probabilities</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 7 · BIAS ENGINE ── -->
+  <section class="section" id="bias-engine">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2 class="section-title">07 — Bias Engine</h2>
+      <span class="badge badge-green">✓ Fase 4 completa</span>
+    </div>
+
+    <p class="section-lead">
+      Quatro camadas de análise que, em conjunto, constroem a evidência estatística
+      de padrões anómalos na arbitragem. A combinação das quatro é necessária para
+      distinguir anomalia isolada de padrão sistemático.
+    </p>
+
+    <pre><span class="cm"># Camada 1 — Z-scores por árbitro+época (binomial Z-test)</span>
+<span class="kw">Z_yellows</span> = (obs_jogos_com_amarelo - exp_yellows) / sqrt(exp * (1 - exp/n))
+<span class="kw">Z_fouls</span>   = (obs_mean_fouls - exp_mean_fouls) / (std_fouls / sqrt(n))
+<span class="kw">SuspicionScore</span> = |Z_yellows| + |Z_reds| + |Z_fouls|
+
+<span class="cm"># Camada 2 — Consistência temporal (multi-época)</span>
+<span class="kw">evidence_score</span> = (n_épocas_biased_y × consistency_y) + (n_épocas_biased_f × consistency_f)
+
+<span class="cm"># Camada 3 — Interacção árbitro×equipa (regressão logística)</span>
+<span class="kw">P(amarelo)</span> ~ is_home + team_effect + referee × team   <span class="cm"># p_value &lt; 0.05 = significativo</span>
+
+<span class="cm"># Camada 4 — Cartões por equipa (comparação directa)</span>
+<span class="kw">desvio</span> = media_amarelos_equipa - media_geral_arbitro   <span class="cm"># > +0.8 = desvio extremo</span></pre>
+
+    <table class="zscore-table">
+      <thead>
+        <tr>
+          <th>Z-score / SuspicionScore</th>
+          <th>Interpretação</th>
+          <th>Acção</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>|Z| &lt; 1.5</td>
+          <td class="z-normal">Normal — dentro da variância esperada</td>
+          <td style="font-size:13px; color:var(--text2)">Nenhuma</td>
+        </tr>
+        <tr>
+          <td>1.5 ≤ |Z| &lt; 2.5</td>
+          <td style="color:var(--text2)">Ligeiramente atípico</td>
+          <td style="font-size:13px; color:var(--text2)">Monitorizar</td>
+        </tr>
+        <tr>
+          <td>2.5 ≤ |Z| &lt; 4</td>
+          <td class="z-suspect">Suspeito — desvio estatisticamente relevante</td>
+          <td style="font-size:13px; color:var(--amber)">Análise aprofundada</td>
+        </tr>
+        <tr>
+          <td>|Z| ≥ 4 ou consistência multi-época</td>
+          <td class="z-strong">Padrão anómalo forte</td>
+          <td style="font-size:13px; color:var(--red)">Alerta</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box warn">
+      <strong>Nota metodológica:</strong> Z-scores elevados indicam padrões estatisticamente
+      anómalos, <em>não prova</em> de parcialidade intencional. A evidência mais robusta
+      é a combinação de: (1) Z-score elevado, (2) padrão consistente em múltiplas épocas,
+      (3) desvio significativo face aos peers. Um árbitro que aparece nas três análises
+      simultaneamente é o caso mais preocupante.
+    </div>
+  </section>
+
+  <!-- ── 8 · ANÁLISE DE CARTÕES ── -->
+  <section class="section" id="analise-cartoes">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <h2 class="section-title">08 — Análise de Cartões por Equipa</h2>
+      <span class="badge badge-green">✓ Fase 4 completa</span>
+    </div>
+
+    <p class="section-lead">
+      Para cada árbitro, por época e acumulado nas 7 épocas completas: quais as equipas
+      a que deu mais e menos cartões amarelos e vermelhos, em termos absolutos e
+      relativos à sua própria média. A análise mais directa para demonstrar padrões
+      sistemáticos contra equipas específicas.
+    </p>
+
+    <table class="data-table">
+      <thead><tr><th>Tabela</th><th>Conteúdo</th><th>Granularidade</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>referee_team_cards</td>
+          <td>Média de amarelos/vermelhos por árbitro×equipa×época, com desvio face à média do árbitro nessa época e percentil entre todas as equipas.</td>
+          <td>Por época</td>
+        </tr>
+        <tr>
+          <td>referee_team_cards_total</td>
+          <td>Acumulado 7 épocas. Inclui ranking (1 = equipa com mais amarelos deste árbitro) e desvio face à média geral do árbitro.</td>
+          <td>Acumulado</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box info">
+      <strong>Desvios extremos identificados (desvio &gt; +0.8 amarelos/jogo):</strong>
+      Jorge de Sousa → Sporting CP (+2.96, 3 jogos);
+      Artur Soares Dias → Sporting CP (+1.42, 7 jogos);
+      Tiago Martins → Marítimo (+1.03, 8 jogos);
+      Manuel Oliveira → Chaves (+1.93, 3 jogos).
+      O par Artur Soares Dias × Sporting CP com 7 jogos é o caso com base estatística mais sólida.
+    </div>
+  </section>
+
+  <!-- ── 9 · API ── -->
+  <section class="section" id="api">
+    <div class="section-header">
+      <span class="section-num">09</span>
+      <h2 class="section-title">09 — REST API</h2>
+      <span class="badge badge-gray">Fase 5 — pendente</span>
+    </div>
+
+    <p class="section-lead">
+      FastAPI com documentação automática via OpenAPI. Todos os endpoints
+      retornam JSON. Autenticação via API key (header <code>X-API-Key</code>).
+    </p>
+
+    <pre><span class="cm"># Endpoints planeados</span>
+
+GET  /referees                          <span class="cm"># lista árbitros activos</span>
+GET  /referees/{id}                     <span class="cm"># perfil do árbitro</span>
+GET  /referees/{id}/bias                <span class="cm"># Z-scores por temporada</span>
+GET  /referees/{id}/bias/{season}       <span class="cm"># Z-scores duma temporada específica</span>
+GET  /teams/{team_id}/referee-bias      <span class="cm"># árbitros com viés vs uma equipa</span>
+GET  /rankings/{season}                 <span class="cm"># ranking de suspeição</span>
+GET  /matches/{id}                      <span class="cm"># detalhes + decisões do jogo</span>
+
+<span class="cm"># Exemplo de resposta — GET /referees/42/bias</span>
+{
+  <span class="st">"referee_id"</span>: 42,
+  <span class="st">"name"</span>: <span class="st">"António Nobre"</span>,
+  <span class="st">"seasons"</span>: [
+    {
+      <span class="st">"season"</span>: <span class="st">"2023/24"</span>,
+      <span class="st">"matches"</span>: 28,
+      <span class="st">"yellow_diff_bias_z"</span>: 2.6,
+      <span class="st">"red_diff_bias_z"</span>: -1.2,
+      <span class="st">"penalty_home_bias_z"</span>: 3.1,
+      <span class="st">"suspicion_score"</span>: 6.9
+    }
+  ]
+}</pre>
+  </section>
+
+  <!-- ── 9 · DASHBOARD ── -->
+  <section class="section" id="dashboard">
+    <div class="section-header">
+      <span class="section-num">10</span>
+      <h2 class="section-title">10 — Dashboard</h2>
+      <span class="badge badge-gray">Fase 5 — pendente</span>
+    </div>
+
+    <p class="section-lead">
+      Streamlit para MVP rápido. Migração para Plotly Dash ou React+D3 na Fase 6
+      se necessário para deploy público.
+    </p>
+
+    <table class="data-table">
+      <thead><tr><th>Módulo</th><th>Descrição</th></tr></thead>
+      <tbody>
+        <tr><td>Ranking de árbitros</td><td>Tabela ordenável por SuspicionScore, filtrável por temporada.</td></tr>
+        <tr><td>Perfil do árbitro</td><td>Evolução histórica dos Z-scores. Distribuição vs. restantes árbitros.</td></tr>
+        <tr><td>Viés por equipa</td><td>Heatmap árbitro × equipa com coeficientes de interacção.</td></tr>
+        <tr><td>Análise de jogo</td><td>Decisões do jogo vs. probabilidades esperadas.</td></tr>
+        <tr><td>Distribuições</td><td>Comparação da distribuição de Z-scores entre temporadas.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 10 · STACK ── -->
+  <section class="section" id="stack">
+    <div class="section-header">
+      <span class="section-num">11</span>
+      <h2 class="section-title">11 — Stack Tecnológico</h2>
+    </div>
+
+    <div class="stack-group">
+      <div class="stack-group-title">Base de Dados</div>
+      <div class="stack-items">
+        <div class="stack-item"><span class="tech-name">PostgreSQL 15+</span><span class="tech-role">storage principal</span></div>
+        <div class="stack-item"><span class="tech-name">psycopg2</span><span class="tech-role">driver Python</span></div>
+      </div>
+    </div>
+
+    <div class="stack-group">
+      <div class="stack-group-title">Ingestão & Processing</div>
+      <div class="stack-items">
+        <div class="stack-item"><span class="tech-name">Python 3.11+</span></div>
+        <div class="stack-item"><span class="tech-name">pandas 2.2</span><span class="tech-role">transformação</span></div>
+        <div class="stack-item"><span class="tech-name">requests</span><span class="tech-role">fetch HTTP</span></div>
+        <div class="stack-item"><span class="tech-name">python-dotenv</span><span class="tech-role">config</span></div>
+        <div class="stack-item"><span class="tech-name">rich</span><span class="tech-role">logging</span></div>
+      </div>
+    </div>
+
+    <div class="stack-group">
+      <div class="stack-group-title">Modelação Estatística (Fase 3)</div>
+      <div class="stack-items">
+        <div class="stack-item"><span class="tech-name">scikit-learn</span><span class="tech-role">logistic regression</span></div>
+        <div class="stack-item"><span class="tech-name">statsmodels</span><span class="tech-role">Poisson + coeficientes</span></div>
+        <div class="stack-item"><span class="tech-name">scipy</span><span class="tech-role">Z-scores, p-values</span></div>
+        <div class="stack-item"><span class="tech-name">numpy</span><span class="tech-role">álgebra linear</span></div>
+      </div>
+    </div>
+
+    <div class="stack-group">
+      <div class="stack-group-title">API & Dashboard (Fase 5)</div>
+      <div class="stack-items">
+        <div class="stack-item"><span class="tech-name">FastAPI</span><span class="tech-role">REST API</span></div>
+        <div class="stack-item"><span class="tech-name">uvicorn</span><span class="tech-role">ASGI server</span></div>
+        <div class="stack-item"><span class="tech-name">Streamlit</span><span class="tech-role">dashboard MVP</span></div>
+        <div class="stack-item"><span class="tech-name">Plotly</span><span class="tech-role">charts interactivos</span></div>
+      </div>
+    </div>
+
+    <div class="stack-group">
+      <div class="stack-group-title">Infra — Docker (portabilidade)</div>
+      <div class="stack-items">
+        <div class="stack-item"><span class="tech-name">Docker Desktop</span><span class="tech-role">único pré-requisito no host</span></div>
+        <div class="stack-item"><span class="tech-name">docker-compose.yml</span><span class="tech-role">orquestra 3 containers</span></div>
+        <div class="stack-item"><span class="tech-name">cal_dev</span><span class="tech-role">Python + todas as libs</span></div>
+        <div class="stack-item"><span class="tech-name">cal_db</span><span class="tech-role">PostgreSQL 15</span></div>
+        <div class="stack-item"><span class="tech-name">cal_pgadmin</span><span class="tech-role">UI admin (opcional)</span></div>
+        <div class="stack-item"><span class="tech-name">pgdata/</span><span class="tech-role">dados no disco externo</span></div>
+        <div class="stack-item"><span class="tech-name">start.sh / start.bat</span><span class="tech-role">arranque cross-platform</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 12 · MANUTENÇÃO DE ÉPOCAS ── -->
+  <section class="section" id="manutencao">
+    <div class="section-header">
+      <span class="section-num">12</span>
+      <h2 class="section-title">12 — Manutenção de Épocas Futuras</h2>
+    </div>
+
+    <p class="section-lead">
+      Procedimento para adicionar uma nova época (ex: 2026/27) ou actualizar
+      a época em curso após cada jornada. Todos os comandos são idempotentes —
+      podem ser corridos mais do que uma vez sem duplicar dados.
+    </p>
+
+    <h3 style="font-family:var(--font-head); font-size:18px; font-weight:500; color:#fff; margin:0 0 12px;">Adicionar época nova</h3>
+
+    <pre><span class="cm"># Passo 1 — football-data.co.uk: adicionar a AVAILABLE_SEASONS em footballdata.py</span>
+<span class="kw">"2026/27"</span>: <span class="st">"2627"</span>   <span class="cm"># padrão: "AAAA/BB" → "AABB"</span>
+<span class="cm"># Verificar disponibilidade: https://www.football-data.co.uk/portugalm.php</span>
+
+<span class="cm"># Passo 2 — Sofascore season_id: obter e adicionar a SEASON_IDS em sofascore.py</span>
+docker compose exec dev python -c <span class="st">"
+import requests
+h = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.sofascore.com'}
+r = requests.get('https://api.sofascore.com/api/v1/unique-tournament/238/seasons', headers=h)
+for s in r.json().get('seasons', [])[:3]: print(s['id'], s['name'])
+"</span>  <span class="cm"># tournament_id=238 é fixo para Liga Portugal</span>
+
+<span class="cm"># Passo 3 — Pipeline completa</span>
+docker compose exec dev python run_ingest.py <span class="st">"2026/27"</span>
+docker compose exec dev python run_referees.py <span class="st">"2026/27"</span>
+docker compose exec dev python run_features.py <span class="st">"2026/27"</span>
+docker compose exec dev python run_models.py       <span class="cm"># re-treinar com nova época</span>
+docker compose exec dev python run_bias.py
+docker compose exec dev python run_cards.py</pre>
+
+    <h3 style="font-family:var(--font-head); font-size:18px; font-weight:500; color:#fff; margin:28px 0 12px;">Pipeline incremental (após cada jornada)</h3>
+
+    <div class="info-box ok">
+      <strong>Forma mais simples — botão no dashboard:</strong> Na sidebar do dashboard
+      Streamlit (<code>http://localhost:8501</code>), secção <em>🔄 Actualizar dados</em>,
+      confirmar a época (ex: <code>2025/26</code>) e carregar <strong>▶ Actualizar agora</strong>.
+      O dashboard corre os 5 scripts automaticamente e recarrega com os dados novos.
+      O botão é <strong>idempotente</strong> — pode ser carregado quantas vezes for necessário
+      sem duplicar dados.
+    </div>
+
+    <div class="info-box info">
+      <strong>Fluxo típico por jornada:</strong><br>
+      <strong>Domingo à noite</strong> — carregar o botão depois dos jogos do fim de semana.<br>
+      <strong>Segunda-feira</strong> — carregar de novo após o último jogo da jornada (jogos em atraso).<br>
+      A pipeline detecta automaticamente os jogos novos e actualiza só o necessário.
+    </div>
+
+    <p style="font-size:13px; color:var(--text2); margin-bottom:12px; font-weight:300;">
+      Alternativa via CLI (se o dashboard não estiver a correr):
+    </p>
+
+    <pre><span class="cm"># Actualizar apenas a época em curso — não re-processar épocas passadas</span>
+docker compose exec dev python run_ingest.py <span class="st">"2025/26"</span>
+docker compose exec dev python run_referees.py <span class="st">"2025/26"</span>
+docker compose exec dev python run_features.py <span class="st">"2025/26"</span>
+docker compose exec dev python run_bias.py
+docker compose exec dev python run_cards.py</pre>
+
+    <div class="info-box warn">
+      <strong>Fim de época — re-treinar modelos:</strong> No fim de cada época, após a ingestão
+      completa, re-treinar os modelos com todos os dados disponíveis. Este passo melhora
+      a precisão dos bias scores para a época seguinte.
+      <br><br>
+      <code>docker compose exec dev python run_models.py</code>
+      <br><br>
+      Isto actualiza <code>expected_probabilities</code> e, por consequência, todos os bias scores.
+      Depois correr novamente <code>run_bias.py</code> e <code>run_cards.py</code> para recalcular
+      com as novas predições.
+    </div>
+  </section>
+
+  <!-- ── 13 · ROADMAP ── -->
+  <section class="section" id="roadmap">
+    <div class="section-header">
+      <span class="section-num">13</span>
+      <h2 class="section-title">13 — Roadmap</h2>
+    </div>
+
+    <p class="section-lead">
+      Timeline estimado com dedicação part-time (~15h/semana). Actualizações
+      de estado registadas no Changelog.
+    </p>
+
+    <div class="timeline">
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 1 · Semanas 1–2</div>
+        <div class="tl-title">Schema DB + Ingestão de Dados</div>
+        <div class="tl-desc">Schema PostgreSQL completo. Pipeline football-data.co.uk + Sofascore. 9 épocas, 2673 jogos, 98.4% cobertura de árbitros. Docker portátil em disco externo.</div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">306 jogos/temporada</span>
+          <span class="badge badge-gray">€0 custo dados</span>
+        </div>
+      </div>
+
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 2 · Semanas 3–4</div>
+        <div class="tl-title">Feature Engineering</div>
+        <div class="tl-desc">Feature matrix com 21 colunas: rolling team strength (10j), rolling referee stats (20j), matchday, ht_score_diff. 4896 linhas guardadas em match_features.</div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">pandas + numpy</span>
+        </div>
+      </div>
+
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 3 · Semanas 5–6</div>
+        <div class="tl-title">Modelos Estatísticos</div>
+        <div class="tl-desc">xYC (Brier 0.067), xRC (Brier 0.113), xF Poisson (MAE 3.3 faltas). LOSO cross-validation. 4816 predições em expected_probabilities. Modelos serializados.</div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">scikit-learn + statsmodels</span>
+        </div>
+      </div>
+
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 4 · Semanas 7–8</div>
+        <div class="tl-title">Bias Engine + Análise de Cartões</div>
+        <div class="tl-desc">Z-scores, consistência temporal, peer comparison, interacção árbitro×equipa, cartões por árbitro×equipa×época. 39 pares com desvio extremo identificados.</div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">scipy + statsmodels</span>
+        </div>
+      </div>
+
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 5 · Semanas 9–10</div>
+        <div class="tl-title">Dashboard Streamlit</div>
+        <div class="tl-desc">6 vistas: árbitro específico, desvios extremos (amarelos+faltas), heatmap geral, por equipa (ranking+top5 europeu), perfil de equipa (veredito beneficiada/prejudicada), ajuda/FAQ. Botão de actualização incremental na sidebar.</div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">Streamlit + Plotly</span>
+        </div>
+      </div>
+
+      <div class="tl-item done">
+        <div class="tl-phase">Fase 6 · Semanas 11–12</div>
+        <div class="tl-title">Alertas, PDF & Histórico por Jornada</div>
+        <div class="tl-desc">
+          (1) Histórico de bias scores por jornada — Z-scores acumulados jornada a jornada em referee_bias_history, permitindo ver como o padrão evolui ao longo da época.
+          (2) Alertas automáticos — 3 níveis (monitorizar |Z|>1.0, suspeito |Z|>2.5, anomalia |Z|>3.0), top 3 SuspicionScore, tendências crescentes, padrões multi-época.
+          (3) Comparação entre árbitros — seleccionar 2–4 árbitros e comparar Z-scores por época em gráfico + pivot table.
+          (4) Relatório PDF — 3 páginas por árbitro: capa com métricas e nível de alerta, Z-scores com gráfico por época, tabela de equipas com desvios, nota metodológica. Entrega directa em ~/Downloads via volume Docker.
+          Dashboard expandido com vista ⚡ Alertas & Comparação (3 tabs). Dockerfile actualizado com matplotlib e reportlab.
+        </div>
+        <div class="tl-meta">
+          <span class="badge badge-green">✓ Completo</span>
+          <span class="badge badge-gray">reportlab + matplotlib + Streamlit</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 15 · DECLARAÇÃO DE IA ── -->
+  <section class="section" id="declaracao-ia">
+    <div class="section-header">
+      <span class="section-num">14</span>
+      <h2 class="section-title">14 — Declaração de Utilização de Inteligência Artificial</h2>
+    </div>
+
+    <p class="section-lead">
+      Em conformidade com o EU AI Act (Regulamento UE 2024/1689) e as directrizes
+      emergentes de transparência em investigação e desenvolvimento de software.
+    </p>
+
+    <div class="info-box ok">
+      <strong>Ferramentas utilizadas:</strong> Claude (Anthropic, versões 2025–2026),
+      utilizado como assistente de programação e documentação durante o desenvolvimento
+      do sistema CAL.
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Âmbito</th><th>Utilização de IA</th><th>Responsabilidade humana</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Código Python / SQL</td>
+          <td>Geração assistida de código para pipeline, modelos, dashboard e relatórios</td>
+          <td>Revisão, teste e validação de todo o código pelo autor</td>
+        </tr>
+        <tr>
+          <td>Documentação técnica</td>
+          <td>Estruturação do cal_architecture.html e do paper académico</td>
+          <td>Conteúdo analítico e decisões de design pelo autor</td>
+        </tr>
+        <tr>
+          <td>Análise estatística</td>
+          <td>Revisão de formulações matemáticas e implementações</td>
+          <td>Concepção metodológica e interpretação dos resultados pelo autor</td>
+        </tr>
+        <tr>
+          <td>Dados</td>
+          <td>Nenhum dado gerado ou modificado por IA</td>
+          <td>Todas as fontes são públicas e verificáveis</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box info">
+      <strong>Nota importante:</strong> O sistema CAL não constitui acusação — identifica
+      padrões estatisticamente anómalos que merecem escrutínio público. A interpretação
+      dos resultados é sempre da responsabilidade do utilizador.
+    </div>
+  </section>
+
+  <!-- ── 15 · CHANGELOG ── -->
+  <section class="section" id="changelog">
+    <div class="section-header">
+      <span class="section-num">15</span>
+      <h2 class="section-title">15 — Changelog</h2>
+    </div>
+
+    <div class="changelog-entry">
+      <div class="changelog-date">2026-03-15<br><span style="color:var(--amber)">v0.9.1</span></div>
+      <div class="changelog-content">
+        <h4>Fases 2, 3 e 4 — Feature Engineering, Modelos e Bias Engine</h4>
+        <p>
+          Feature matrix completa (<code>match_features</code>, 4896 linhas, 21 colunas) com rolling
+          team strength e rolling referee stats. Três modelos: xYC (Brier 0.067), xRC (Brier 0.113),
+          xF Poisson (MAE 3.3). Bias engine: Z-scores binomial + t-test, consistência temporal,
+          peer comparison, interacção árbitro×equipa. Análise de cartões por árbitro×equipa×época —
+          39 desvios extremos identificados. Sofascore API para árbitros (98.4% cobertura).
+          Docker portátil operacional. Épocas 2025/26 adicionadas.
+        </p>
+      </div>
+    </div>
+
+    <div class="changelog-entry">
+      <div class="changelog-date">2026-03-15<br><span style="color:var(--amber)">v0.1.0</span></div>
+      <div class="changelog-content">
+        <h4>Fase 1 — Schema DB + Pipeline de Ingestão</h4>
+        <p>
+          Schema PostgreSQL completo: 10 tabelas, 3 views analíticas, índices.
+          Pipeline football-data.co.uk para temporadas 2017/18 a 2025/26.
+          Sistema de alias para normalização de nomes entre fontes.
+          CLI entry points. Auditoria via <code>ingest_log</code>.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+const navItems = document.querySelectorAll('.nav-item');
+const sections = document.querySelectorAll('section[id]');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navItems.forEach(n => n.classList.remove('active'));
+      const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
