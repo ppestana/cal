@@ -52,7 +52,7 @@ Servidor    → Hetzner Cloud CPX22 (Ubuntu 24.04)
 ## Estrutura do projecto
 
 ```
-CAL/
+cal/
 ├── cal/
 │   ├── analysis/           ← Módulos de análise estatística
 │   │   ├── alerts.py
@@ -72,6 +72,8 @@ CAL/
 │   ├── db.py               ← Gestão de ligações à base de dados
 │   ├── schema.sql          ← Schema PostgreSQL
 │   └── requirements.txt
+├── cal_splash.html         ← Splash screen (ficha técnica do projecto)
+├── cal_architecture.html   ← Documentação completa da arquitectura
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .env.example            ← Template de configuração
@@ -141,18 +143,27 @@ DB_PORT=5432
 
 ## Demonstração
 
-A aplicação está disponível em produção em **[cal.terradigital.net](https://cal.terradigital.net)**
+A aplicação está disponível em produção em **[cal.terradigital.net/app](https://cal.terradigital.net/app)**
+
+> A primeira visita a `cal.terradigital.net` apresenta um splash screen com a ficha técnica do projecto antes de entrar na aplicação.
+
+---
+
+## Declaração de utilização de IA
+
+Em conformidade com o EU AI Act (Regulamento UE 2024/1689).  
+Claude (Anthropic, 2025–2026) foi utilizado como assistente de programação e documentação. Todo o código foi revisto, testado e validado pelo autor. Nenhum dado foi gerado ou modificado por IA.
 
 ---
 
 ## Autor
 
 **Pedro Pestana** — GIS & geospatial systems specialist, full-stack developer  
-[pedropestana.com](https://www.pedropestana.com) · [TerraDigital](https://www.terradigital.net)
+[pedropestana.com](https://www.pedropestana.com) · [TerraDigital](https://www.terradigital.net) · [LinkedIn](https://www.linkedin.com/in/pmpestana)
 
 ---
 
 ## Licença
 
-Este projecto é disponibilizado para fins académicos e de investigação.  
-Os dados utilizados são de fontes públicas. Uso comercial não autorizado.
+MIT License — ver [LICENSE](LICENSE)  
+Os dados utilizados são de fontes públicas. Uso comercial dos dados não autorizado.
